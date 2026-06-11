@@ -27,11 +27,25 @@
 
       <div class="header-actions">
         <template v-if="isLoggedIn">
-          <div v-if="displayName" class="user-chip">
-            <el-icon><UserFilled /></el-icon>
-            <span>{{ displayName }}</span>
-          </div>
-          <el-button class="logout-btn" @click="handleLogout">退出</el-button>
+          <el-dropdown trigger="click" @command="handleUserCommand">
+            <div v-if="displayName" class="user-chip">
+              <el-icon><UserFilled /></el-icon>
+              <span>{{ displayName }}</span>
+              <el-icon class="user-arrow"><ArrowDown /></el-icon>
+            </div>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="profile">
+                  <el-icon><User /></el-icon>
+                  个人中心
+                </el-dropdown-item>
+                <el-dropdown-item divided command="logout">
+                  <el-icon><SwitchButton /></el-icon>
+                  退出登录
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </template>
         <el-button v-else class="action-btn login-btn" @click="router.push('/login')">
           供应商登录
@@ -42,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { UserFilled } from '@element-plus/icons-vue'
+import { ArrowDown, SwitchButton, User, UserFilled } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getAccessToken } from '@/utils/auth'
 import { useUserStoreWithOut } from '@/store/user'
@@ -102,6 +116,16 @@ const goNav = (item: NavItem) => {
 }
 
 const goHome = () => router.push('/')
+
+const handleUserCommand = (command: string) => {
+  if (command === 'profile') {
+    router.push('/profile')
+    return
+  }
+  if (command === 'logout') {
+    handleLogout()
+  }
+}
 
 const handleLogout = async () => {
   await userStore.loginOutAction()
@@ -247,6 +271,13 @@ const handleLogout = async () => {
   font-size: 13px;
   color: var(--sp-text-secondary);
   border: 1px solid var(--sp-border);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: rgba(13, 107, 143, 0.35);
+    color: var(--sp-brand-secondary);
+  }
 
   span {
     max-width: 100px;
@@ -256,7 +287,14 @@ const handleLogout = async () => {
   }
 }
 
-.logout-btn {
-  border-radius: 8px;
+.user-arrow {
+  font-size: 12px;
+  color: var(--sp-text-muted);
+}
+
+:deep(.el-dropdown-menu__item) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 </style>

@@ -76,6 +76,18 @@ const routes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/profile',
+    component: businessLayout,
+    children: [
+      {
+        path: '',
+        name: 'SupplierProfile',
+        component: () => import('@/views/profile/index.vue'),
+        meta: { title: '个人中心' }
+      }
+    ]
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/'
   }
