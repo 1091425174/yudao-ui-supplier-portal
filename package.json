@@ -1,0 +1,37 @@
+{
+  "name": "yudao-ui-supplier-portal",
+  "version": "1.0.0",
+  "description": "供应商门户前端（在线竞价）",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --mode env.local",
+    "build": "vue-tsc --noEmit && vite build --mode prod",
+    "build:prod": "vite build --mode env.prod",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "@vueuse/core": "^10.9.0",
+    "axios": "^1.9.0",
+    "dayjs": "^1.11.10",
+    "echarts": "^5.5.0",
+    "element-plus": "^2.11.1",
+    "pinia": "^2.1.7",
+    "qs": "^6.12.0",
+    "vue": "^3.5.12",
+    "vue-router": "^4.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.9",
+    "@types/qs": "^6.9.15",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "sass": "^1.81.0",
+    "typescript": "^5.6.3",
+    "unplugin-auto-import": "^0.18.6",
+    "unplugin-vue-components": "^0.27.5",
+    "vite": "^5.4.11",
+    "vue-tsc": "^2.1.10"
+  }
+}

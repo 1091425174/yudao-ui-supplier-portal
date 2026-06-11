@@ -1,0 +1,57 @@
+@use './variables.scss';
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, sans-serif;
+  color: var(--sp-text-primary);
+  background: var(--sp-bg-page);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--sp-brand-secondary);
+}
+
+/* 业务页通用卡片 */
+.sp-card {
+  background: var(--sp-bg-card);
+  border: 1px solid var(--sp-border);
+  border-radius: var(--sp-radius);
+  box-shadow: var(--sp-shadow-sm);
+  transition: box-shadow 0.25s, transform 0.25s;
+
+  &:hover {
+    box-shadow: var(--sp-shadow-md);
+  }
+}
+
+.sp-section-title {
+  position: relative;
+  margin: 0 0 20px;
+  padding-left: 14px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--sp-text-primary);
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 18px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, var(--sp-brand-accent) 0%, var(--sp-brand-secondary) 100%);
+  }
+}
