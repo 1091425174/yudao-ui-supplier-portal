@@ -3,3 +3,4 @@ dist
 dist-prod
 *.local
 .DS_Store
+dist-prod.zip
