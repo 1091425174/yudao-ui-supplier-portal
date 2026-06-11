@@ -13,7 +13,7 @@ pnpm install
 pnpm dev
 ```
 
-默认端口 `81`，API 网关地址见 `.env.local`。
+默认端口 `80`，API 网关地址见 `.env.local`。
 
 ## 页面
 
