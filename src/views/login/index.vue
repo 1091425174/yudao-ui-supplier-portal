@@ -55,7 +55,6 @@
 <script setup lang="ts">
 import type { FormInstance, FormRules } from 'element-plus'
 import { ArrowLeft, CircleCheck } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import { login } from '@/api/login'
 import { setToken } from '@/utils/auth'
@@ -90,8 +89,8 @@ const handleLogin = async () => {
     await userStore.setUserInfoAction()
     const redirect = (route.query.redirect as string) || '/target-hall'
     await router.replace(redirect)
-  } catch (e: any) {
-    if (e?.message) ElMessage.error(e.message)
+  } catch {
+    // 错误提示由 axios 拦截器统一处理
   } finally {
     loading.value = false
   }
