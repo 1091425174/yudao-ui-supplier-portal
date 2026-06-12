@@ -9,6 +9,14 @@ export interface UserVO {
   nickname: string
   mobile?: string
   supplierId?: number
+  status?: number
+  loginIp?: string
+  loginDate?: string
+  supplierName?: string
+  supplierCode?: string
+  supplierStatus?: number
+  contactPerson?: string
+  contactPhone?: string
 }
 
 export const useUserStore = defineStore('supplier-user', {

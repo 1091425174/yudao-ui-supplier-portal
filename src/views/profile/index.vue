@@ -1,32 +1,57 @@
 <template>
   <div class="page-panel" v-loading="loading">
-    <PageHeader title="个人中心" description="查看账号与企业信息，快速进入业务功能" />
+    <PageHeader title="个人中心" description="查看与维护账号、企业信息，快速进入业务功能">
+      <template #extra>
+        <el-button @click="openPasswordDialog">修改密码</el-button>
+        <el-button type="primary" :loading="savingProfile" @click="saveProfile">保存资料</el-button>
+      </template>
+    </PageHeader>
 
     <div class="profile-grid">
       <section class="info-card sp-card">
         <h3 class="card-title">账号信息</h3>
-        <el-descriptions :column="1" border>
-          <el-descriptions-item label="登录账号">{{ user.username || '--' }}</el-descriptions-item>
-          <el-descriptions-item label="昵称">{{ user.nickname || '--' }}</el-descriptions-item>
-          <el-descriptions-item label="手机号">{{ user.mobile || '--' }}</el-descriptions-item>
-          <el-descriptions-item label="用户 ID">{{ user.id || '--' }}</el-descriptions-item>
-        </el-descriptions>
+        <el-form :model="profileForm" label-width="88px">
+          <el-form-item label="登录账号">
+            <el-input :model-value="user.username" disabled />
+          </el-form-item>
+          <el-form-item label="昵称">
+            <el-input v-model="profileForm.nickname" placeholder="请输入昵称" />
+          </el-form-item>
+          <el-form-item label="手机号">
+            <el-input v-model="profileForm.mobile" placeholder="请输入手机号" />
+          </el-form-item>
+          <el-form-item label="账号状态">
+            <el-tag :type="user.status === 0 ? 'success' : 'danger'">
+              {{ user.status === 0 ? '正常' : '禁用' }}
+            </el-tag>
+          </el-form-item>
+          <el-form-item label="最后登录">
+            <span>{{ formatDateTime(user.loginDate) }}</span>
+          </el-form-item>
+        </el-form>
       </section>
 
       <section class="info-card sp-card">
         <h3 class="card-title">企业信息</h3>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="企业名称">{{ user.supplierName || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="企业编号">{{ user.supplierCode || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="审核状态">
+            <el-tag :type="getSupplierStatusType(user.supplierStatus)">
+              {{ getSupplierStatusText(user.supplierStatus) }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="联系人">{{ user.contactPerson || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="联系电话">{{ user.contactPhone || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="供应商 ID">{{ user.supplierId ?? '--' }}</el-descriptions-item>
+        </el-descriptions>
         <el-alert
+          class="enterprise-tip"
           type="info"
           :closable="false"
           show-icon
-          class="enterprise-tip"
-          title="企业名称、资质状态等详细信息将在后续版本开放，当前仅展示关联标识。"
+          title="企业档案由采购方维护，供应商门户仅展示，暂不支持自行修改。"
         />
-        <el-descriptions :column="1" border>
-          <el-descriptions-item label="供应商 ID">{{ user.supplierId ?? '--' }}</el-descriptions-item>
-          <el-descriptions-item label="企业名称">待接入</el-descriptions-item>
-          <el-descriptions-item label="审核状态">待接入</el-descriptions-item>
-        </el-descriptions>
       </section>
     </div>
 
@@ -55,13 +80,35 @@
         </div>
       </div>
     </section>
+
+    <el-dialog v-model="passwordVisible" title="修改密码" width="420px" :close-on-click-modal="false">
+      <el-form ref="passwordFormRef" :model="passwordForm" :rules="passwordRules" label-width="88px">
+        <el-form-item label="旧密码" prop="oldPassword">
+          <el-input v-model="passwordForm.oldPassword" type="password" show-password />
+        </el-form-item>
+        <el-form-item label="新密码" prop="newPassword">
+          <el-input v-model="passwordForm.newPassword" type="password" show-password />
+        </el-form-item>
+        <el-form-item label="确认密码" prop="confirmPassword">
+          <el-input v-model="passwordForm.confirmPassword" type="password" show-password />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="passwordVisible = false">取消</el-button>
+        <el-button type="primary" :loading="savingPassword" @click="submitPassword">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
+import type { FormInstance, FormRules } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { ArrowRight, DataLine, Document } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import PageHeader from '@/components/PageHeader.vue'
+import { updatePassword, updateProfile } from '@/api/login'
+import { formatDateTime } from '@/utils/format'
 import { useUserStoreWithOut } from '@/store/user'
 
 defineOptions({ name: 'SupplierProfile' })
@@ -69,17 +116,125 @@ defineOptions({ name: 'SupplierProfile' })
 const router = useRouter()
 const userStore = useUserStoreWithOut()
 const loading = ref(false)
+const savingProfile = ref(false)
+const savingPassword = ref(false)
+const passwordVisible = ref(false)
+const passwordFormRef = ref<FormInstance>()
 
 const user = computed(() => userStore.getUser)
+const profileForm = reactive({
+  nickname: '',
+  mobile: ''
+})
 
-onMounted(async () => {
+const passwordForm = reactive({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+
+const passwordRules: FormRules = {
+  oldPassword: [{ required: true, message: '请输入旧密码', trigger: 'blur' }],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 4, max: 16, message: '密码长度为 4-16 位', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认新密码', trigger: 'blur' },
+    {
+      validator: (_rule, value, callback) => {
+        if (value !== passwordForm.newPassword) {
+          callback(new Error('两次输入的密码不一致'))
+          return
+        }
+        callback()
+      },
+      trigger: 'blur'
+    }
+  ]
+}
+
+const getSupplierStatusText = (status?: number) => {
+  switch (status) {
+    case 0:
+      return '禁用'
+    case 1:
+      return '正常'
+    case 2:
+      return '审核中'
+    case 3:
+      return '审核失败'
+    default:
+      return '--'
+  }
+}
+
+const getSupplierStatusType = (status?: number) => {
+  switch (status) {
+    case 1:
+      return 'success'
+    case 2:
+      return 'warning'
+    case 3:
+      return 'danger'
+    default:
+      return 'info'
+  }
+}
+
+const syncProfileForm = () => {
+  profileForm.nickname = user.value.nickname || ''
+  profileForm.mobile = user.value.mobile || ''
+}
+
+const loadUser = async () => {
   loading.value = true
   try {
     await userStore.setUserInfoAction()
+    syncProfileForm()
   } finally {
     loading.value = false
   }
-})
+}
+
+const saveProfile = async () => {
+  savingProfile.value = true
+  try {
+    await updateProfile({ ...profileForm })
+    await userStore.setUserInfoAction()
+    syncProfileForm()
+    ElMessage.success('资料已保存')
+  } finally {
+    savingProfile.value = false
+  }
+}
+
+const openPasswordDialog = () => {
+  passwordForm.oldPassword = ''
+  passwordForm.newPassword = ''
+  passwordForm.confirmPassword = ''
+  passwordVisible.value = true
+}
+
+const submitPassword = async () => {
+  if (!passwordFormRef.value) return
+  await passwordFormRef.value.validate()
+  savingPassword.value = true
+  try {
+    await updatePassword({
+      oldPassword: passwordForm.oldPassword,
+      newPassword: passwordForm.newPassword
+    })
+    ElMessage.success('密码修改成功，请重新登录')
+    passwordVisible.value = false
+    await userStore.loginOutAction()
+    router.replace('/login')
+  } finally {
+    savingPassword.value = false
+  }
+}
+
+onMounted(loadUser)
 </script>
 
 <style scoped lang="scss">
@@ -106,7 +261,7 @@ onMounted(async () => {
 }
 
 .enterprise-tip {
-  margin-bottom: 16px;
+  margin-top: 16px;
 }
 
 .business-section {
