@@ -24,6 +24,12 @@
               竞价结束时间：{{ formatDateTime(roomInfo.endTime) }}
             </div>
           </div>
+          <div v-if="roomInfo.autoDelayEnabled === 1" class="delay-tip">
+            {{ delayRuleText }}
+            <span v-if="dashboardInfo.currentDelayTimes !== null && dashboardInfo.currentDelayTimes !== undefined">
+              （已延时 {{ dashboardInfo.currentDelayTimes }}/{{ formatMaxDelayTimes(roomInfo.maxDelayTimes) }} 次）
+            </span>
+          </div>
           <div v-if="resultInfo.resultStatus !== undefined && resultInfo.resultStatus !== 0" class="result-summary">
             <div class="result-text">{{ resultInfo.resultText || getResultStatusText(resultInfo.resultStatus) }}</div>
             <div class="result-meta">
@@ -122,7 +128,7 @@
                       <div>1. 竞价开始后、结束前可进行报价。</div>
                       <div>2. 报价金额必须大于 0。</div>
                       <div>3. 新报价需低于当前最低报价。</div>
-                      <div>4. 若报价触发延时，竞价结束时间会自动顺延。</div>
+                      <div>4. {{ delayRuleText }}</div>
                       <div>5. 竞价结束后不可继续报价。</div>
                     </div>
                   </template>
@@ -242,6 +248,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { getWsUrl } from '@/utils/auth'
 import { RoomApi, type SupplierRoomResult } from '@/api/bid/room'
 import { SupplierQuoteApi } from '@/api/bid/quote'
+import { formatDelayRuleText, formatMaxDelayTimes } from '@/utils/format'
+
 const route = useRoute()
 const router = useRouter()
 
@@ -310,8 +318,14 @@ const roomInfo = reactive({
   creatorId: undefined as number | undefined,
   creatorName: '',
   createTime: '',
-  priceLimit: undefined as number | undefined
+  priceLimit: undefined as number | undefined,
+  autoDelayEnabled: undefined as number | undefined,
+  delayTriggerMinutes: undefined as number | undefined,
+  delayMinutes: undefined as number | undefined,
+  maxDelayTimes: undefined as number | undefined
 })
+
+const delayRuleText = computed(() => formatDelayRuleText(roomInfo))
 
 const dashboardInfo = reactive({
   currentMinPrice: null as number | string | null,
@@ -884,6 +898,10 @@ const loadDashboardSummary = async () => {
   if (res.quoteCount !== null && res.quoteCount !== undefined) {
     dashboardInfo.quoteCount = res.quoteCount
   }
+
+  if (res.currentDelayTimes !== null && res.currentDelayTimes !== undefined) {
+    dashboardInfo.currentDelayTimes = res.currentDelayTimes
+  }
 }
 
 const handleWsDelay = async (content: any) => {
@@ -893,6 +911,10 @@ const handleWsDelay = async (content: any) => {
   if (newEndTime) {
     roomInfo.endTime = newEndTime
     dashboardInfo.endTime = newEndTime
+  }
+
+  if (content?.currentDelayTimes !== null && content?.currentDelayTimes !== undefined) {
+    dashboardInfo.currentDelayTimes = content.currentDelayTimes
   }
 
   if (oldEndTime && newEndTime && oldEndTime !== newEndTime) {
@@ -992,6 +1014,16 @@ onBeforeUnmount(() => {
 
 .header-panel {
   padding: 16px 20px;
+}
+
+.delay-tip {
+  margin-top: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--sp-text-secondary);
+  background: var(--sp-bg-soft, #f5f7fa);
+  border-radius: 6px;
 }
 
 .status-row {

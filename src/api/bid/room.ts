@@ -12,6 +12,11 @@ export interface Room {
   startTime?: string
   endTime?: string
   priceLimit?: number
+  autoDelayEnabled?: number
+  delayTriggerMinutes?: number
+  delayMinutes?: number
+  maxDelayTimes?: number
+  currentDelayTimes?: number
 }
 
 export interface RoomDashboard {
@@ -26,6 +31,11 @@ export interface RoomDashboard {
   quoteTrends?: Array<{ time?: string; price?: number | string }>
   endTime?: string
   quoteCount?: number | null
+  autoDelayEnabled?: number
+  delayTriggerMinutes?: number
+  delayMinutes?: number
+  maxDelayTimes?: number
+  currentDelayTimes?: number
 }
 
 export interface SupplierRoomResult {

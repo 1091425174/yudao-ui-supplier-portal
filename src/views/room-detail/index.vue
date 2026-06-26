@@ -23,6 +23,12 @@
           <el-descriptions-item label="竞价室名称">{{ roomInfo.name || '--' }}</el-descriptions-item>
           <el-descriptions-item label="开始时间">{{ formatDateTime(roomInfo.startTime) }}</el-descriptions-item>
           <el-descriptions-item label="结束时间">{{ formatDateTime(roomInfo.endTime) }}</el-descriptions-item>
+          <el-descriptions-item label="自动延时">
+            {{ roomInfo.autoDelayEnabled === 1 ? '已开启' : '未开启' }}
+          </el-descriptions-item>
+          <el-descriptions-item v-if="roomInfo.autoDelayEnabled === 1" label="延时规则" :span="2">
+            {{ formatDelayRuleText(roomInfo) }}
+          </el-descriptions-item>
         </el-descriptions>
 
         <el-card
@@ -73,7 +79,7 @@ import { ElMessage } from 'element-plus'
 import { useWebSocket } from '@vueuse/core'
 import { getWsUrl } from '@/utils/auth'
 import { RoomApi, type SupplierRoomResult } from '@/api/bid/room'
-import { getRoomStatusText, formatDateTime, formatMoney } from '@/utils/format'
+import { getRoomStatusText, formatDateTime, formatMoney, formatDelayRuleText } from '@/utils/format'
 import PageHeader from '@/components/PageHeader.vue'
 
 defineOptions({ name: 'SupplierRoomDetail' })
@@ -90,6 +96,10 @@ interface RoomDetailInfo {
   status?: number
   startTime?: string | number | Date
   endTime?: string | number | Date
+  autoDelayEnabled?: number
+  delayTriggerMinutes?: number
+  delayMinutes?: number
+  maxDelayTimes?: number
 }
 
 const roomInfo = ref<RoomDetailInfo | null>(null)

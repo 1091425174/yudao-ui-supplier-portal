@@ -33,3 +33,27 @@ export const formatDateTime = (value?: string | number | Date | null) => {
   const s = String(date.getSeconds()).padStart(2, '0')
   return `${y}-${m}-${d} ${h}:${min}:${s}`
 }
+
+export interface RoomDelayConfig {
+  autoDelayEnabled?: number
+  delayTriggerMinutes?: number
+  delayMinutes?: number
+  maxDelayTimes?: number
+  currentDelayTimes?: number
+}
+
+export const formatMaxDelayTimes = (max?: number) => {
+  if (max === 0) return '不限制'
+  if (max === undefined || max === null) return '--'
+  return String(max)
+}
+
+export const formatDelayRuleText = (room?: RoomDelayConfig) => {
+  if (!room || room.autoDelayEnabled !== 1) {
+    return '本竞价室未开启自动延时'
+  }
+  const trigger = room.delayTriggerMinutes ?? '--'
+  const delay = room.delayMinutes ?? '--'
+  const max = formatMaxDelayTimes(room.maxDelayTimes)
+  return `截止前 ${trigger} 分钟内报价，结束时间将延长 ${delay} 分钟，最多延时 ${max} 次`
+}
