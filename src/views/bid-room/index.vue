@@ -988,7 +988,8 @@ onBeforeUnmount(() => {
   padding: 16px 20px 24px;
   min-height: calc(100vh - 120px);
   box-sizing: border-box;
-  max-width: 1440px;
+  width: 100%;
+  max-width: 1520px;
   margin: 0 auto;
 }
 
@@ -1000,7 +1001,7 @@ onBeforeUnmount(() => {
 }
 
 .side-panel {
-  width: 340px;
+  width: 420px;
   flex-shrink: 0;
   padding: 16px;
 }
@@ -1281,6 +1282,8 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  max-height: calc(100vh - 320px);
+  overflow-y: auto;
 }
 
 .quote-item {
@@ -1294,17 +1297,22 @@ onBeforeUnmount(() => {
 
 .quote-text {
   flex: 1;
+  min-width: 0;
   font-size: 13px;
   line-height: 1.6;
   color: #606266;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .quote-time {
-  width: 130px;
+  width: 148px;
   text-align: right;
   font-size: 12px;
   color: #909399;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 @media screen and (max-width: 1200px) {
@@ -1322,6 +1330,10 @@ onBeforeUnmount(() => {
 
   .side-panel {
     width: 100%;
+  }
+
+  .quote-text {
+    white-space: normal;
   }
 }
 
