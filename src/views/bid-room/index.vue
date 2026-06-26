@@ -434,8 +434,8 @@ const handleWsNewQuote = async (content: any) => {
   if (!Array.isArray(dashboardInfo.quoteTrends)) {
     dashboardInfo.quoteTrends = []
   }
-  dashboardInfo.quoteTrends.unshift({
-    time: formatDateTime(content.quoteTime),
+  dashboardInfo.quoteTrends.push({
+    time: formatChartTime(content.quoteTime),
     price: content.quotePrice
   })
 
@@ -503,6 +503,22 @@ const formatDateTime = (value?: string | number | Date) => {
   const second = String(date.getSeconds()).padStart(2, '0')
 
   return `${year}-${month}-${day} ${hour}:${minute}:${second}`
+}
+
+/** 折线图横轴：仅显示时分秒，与后端 quoteTrends 一致 */
+const formatChartTime = (value?: string | number | Date) => {
+  if (!value && value !== 0) return '--'
+  const date = new Date(value)
+  if (!isNaN(date.getTime())) {
+    const hour = String(date.getHours()).padStart(2, '0')
+    const minute = String(date.getMinutes()).padStart(2, '0')
+    const second = String(date.getSeconds()).padStart(2, '0')
+    return `${hour}:${minute}:${second}`
+  }
+  const str = String(value)
+  const spaceIdx = str.indexOf(' ')
+  if (spaceIdx > -1) return str.slice(spaceIdx + 1)
+  return str
 }
 
 const formatMoney = (value: any) => {
@@ -581,7 +597,7 @@ const updateTrendChart = async () => {
   await initChart()
   if (!chartInstance) return
 
-  const trendList = [...rawList].reverse()
+  const trendList = rawList
   const xData = trendList.map(item => item.time || '--')
   const yData = trendList.map(item => {
     const num = Number(item.price)
