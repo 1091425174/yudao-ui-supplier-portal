@@ -3,7 +3,12 @@
     <PageHeader title="交易大厅" description="查看今日招标、计划项目与历史记录，进入竞价室参与报价" />
 
     <div class="tab-panel sp-card">
-      <el-radio-group v-model="currentMenu" size="large" @change="handleMenuChange">
+      <el-radio-group
+        v-model="currentMenu"
+        :size="isMobile ? 'default' : 'large'"
+        class="menu-radio-group"
+        @change="handleMenuChange"
+      >
         <el-radio-button label="today">今日招标</el-radio-button>
         <el-radio-button label="plan">招标计划</el-radio-button>
         <el-radio-button label="history">历史项目</el-radio-button>
@@ -45,7 +50,8 @@
         v-model:current-page="pageNo"
         :page-size="pageSize"
         :total="total"
-        layout="prev, pager, next, total"
+        :layout="paginationLayout"
+        :small="isMobile"
         background
         @current-change="loadData"
       />
@@ -59,6 +65,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { RoomApi, type Room } from '@/api/bid/room'
 import { getRoomStatusText, formatDateTime } from '@/utils/format'
+import { useDevice } from '@/composables/useDevice'
 import PageHeader from '@/components/PageHeader.vue'
 
 defineOptions({ name: 'SupplierTradeHall' })
@@ -80,6 +87,7 @@ interface ProjectItem {
 }
 
 const router = useRouter()
+const { isMobile } = useDevice()
 
 const loading = ref(false)
 const currentMenu = ref<'today' | 'plan' | 'history'>('today')
@@ -114,6 +122,10 @@ const emptyText = computed(() => {
       return '暂无数据'
   }
 })
+
+const paginationLayout = computed(() =>
+  isMobile.value ? 'total, prev, pager, next' : 'prev, pager, next, total'
+)
 
 const convertRoomToProjectItem = (room: Room): ProjectItem => {
   return {
@@ -173,6 +185,8 @@ onMounted(loadData)
 </script>
 
 <style scoped lang="scss">
+@use '@/styles/breakpoints.scss' as *;
+
 .page-panel {
   min-height: 100%;
 }
@@ -180,6 +194,10 @@ onMounted(loadData)
 .tab-panel {
   margin-bottom: 20px;
   padding: 16px 24px;
+}
+
+.menu-radio-group {
+  width: 100%;
 }
 
 .card-list {
@@ -255,9 +273,85 @@ onMounted(loadData)
   justify-content: center;
 }
 
-@media (max-width: 960px) {
+@include sp-tablet-down {
   .card-list {
     grid-template-columns: 1fr;
+  }
+}
+
+@include sp-mobile {
+  .tab-panel {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+  }
+
+  .menu-radio-group {
+    :deep(.el-radio-group) {
+      display: flex;
+      width: 100%;
+    }
+
+    :deep(.el-radio-button) {
+      flex: 1;
+    }
+
+    :deep(.el-radio-button__inner) {
+      width: 100%;
+      padding: 8px 4px;
+      font-size: 13px;
+    }
+  }
+
+  .card-list {
+    gap: 12px;
+    min-height: 160px;
+  }
+
+  .project-card {
+    padding: 14px 14px 16px;
+
+    &:hover {
+      transform: none;
+    }
+
+    &::before {
+      opacity: 1;
+    }
+  }
+
+  .card-top {
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .room-name {
+    font-size: 15px;
+    white-space: normal;
+    line-height: 1.45;
+    word-break: break-all;
+  }
+
+  .info-desc {
+    :deep(.el-descriptions__label) {
+      width: 68px;
+      font-size: 12px;
+    }
+
+    :deep(.el-descriptions__content) {
+      font-size: 12px;
+    }
+  }
+
+  .pagination-bar {
+    margin-top: 16px;
+    padding-bottom: 4px;
+
+    :deep(.el-pagination) {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px 4px;
+    }
   }
 }
 </style>
