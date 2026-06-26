@@ -39,6 +39,8 @@ const handleBack = () => router.back()
 </script>
 
 <style scoped lang="scss">
+@use '@/styles/breakpoints.scss' as *;
+
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -97,5 +99,32 @@ const handleBack = () => router.back()
   flex-shrink: 0;
   position: relative;
   z-index: 1;
+}
+
+@include sp-mobile {
+  .page-header {
+    padding: 14px 14px 16px;
+    margin-bottom: 12px;
+    border-radius: var(--sp-radius);
+
+    &::after {
+      width: 120px;
+    }
+  }
+
+  .header-title {
+    font-size: 18px;
+    letter-spacing: 0.2px;
+  }
+
+  .header-desc {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .back-btn {
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
 }
 </style>

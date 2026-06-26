@@ -18,7 +18,7 @@
           </el-tag>
         </div>
 
-        <el-descriptions :column="2" border class="info-desc">
+        <el-descriptions :column="descColumn" border class="info-desc">
           <el-descriptions-item label="标的名称">{{ roomInfo.targetName || '--' }}</el-descriptions-item>
           <el-descriptions-item label="竞价室名称">{{ roomInfo.name || '--' }}</el-descriptions-item>
           <el-descriptions-item label="开始时间">{{ formatDateTime(roomInfo.startTime) }}</el-descriptions-item>
@@ -42,7 +42,7 @@
           <div class="result-main">
             {{ resultInfo.resultText || getResultStatusText(resultInfo.resultStatus) }}
           </div>
-          <el-descriptions :column="2" size="small">
+          <el-descriptions :column="descColumn" size="small">
             <el-descriptions-item label="我的最终报价">
               {{ formatMoney(resultInfo.myFinalQuotePrice) }} 元
             </el-descriptions-item>
@@ -58,13 +58,22 @@
           </el-descriptions>
         </el-card>
 
-        <div class="action-bar">
+        <div class="action-bar action-bar--desktop">
           <el-tooltip :disabled="canEnterRoom" :content="enterDisabledReason" placement="top">
-            <el-button type="primary" size="large" :disabled="!canEnterRoom" @click="enterRoom">
+            <el-button type="primary" size="large" :disabled="!canEnterRoom" @click="handleEnterClick">
               {{ enterButtonText }}
             </el-button>
           </el-tooltip>
         </div>
+      </div>
+
+      <div class="mobile-action-bar">
+        <p v-if="!canEnterRoom && enterDisabledReason" class="mobile-action-tip">
+          {{ enterDisabledReason }}
+        </p>
+        <el-button type="primary" size="large" class="mobile-enter-btn" @click="handleEnterClick">
+          {{ enterButtonText }}
+        </el-button>
       </div>
     </template>
 
@@ -80,6 +89,7 @@ import { useWebSocket } from '@vueuse/core'
 import { getWsUrl } from '@/utils/auth'
 import { RoomApi, type SupplierRoomResult } from '@/api/bid/room'
 import { getRoomStatusText, formatDateTime, formatMoney, formatDelayRuleText } from '@/utils/format'
+import { useDevice } from '@/composables/useDevice'
 import PageHeader from '@/components/PageHeader.vue'
 
 defineOptions({ name: 'SupplierRoomDetail' })
@@ -87,6 +97,9 @@ defineOptions({ name: 'SupplierRoomDetail' })
 const route = useRoute()
 const router = useRouter()
 const loading = ref(false)
+const { isMobile } = useDevice()
+
+const descColumn = computed(() => (isMobile.value ? 1 : 2))
 
 interface RoomDetailInfo {
   id: number
@@ -211,6 +224,14 @@ const enterRoom = () => {
   })
 }
 
+const handleEnterClick = () => {
+  if (!canEnterRoom.value) {
+    ElMessage.warning(enterDisabledReason.value)
+    return
+  }
+  enterRoom()
+}
+
 const wsServer = ref(getWsUrl())
 
 const { data: wsData, close: closeWs } = useWebSocket(wsServer.value, {
@@ -299,8 +320,14 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="scss">
+@use '@/styles/breakpoints.scss' as *;
+
 .page-panel {
   min-height: 100%;
+}
+
+.mobile-action-bar {
+  display: none;
 }
 
 .detail-card {
@@ -362,6 +389,84 @@ onBeforeUnmount(() => {
     height: 44px;
     font-weight: 600;
     border-radius: 8px;
+  }
+}
+
+@include sp-mobile {
+  .page-panel {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .detail-card {
+    padding: 16px 14px;
+  }
+
+  .detail-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+  }
+
+  .project-name {
+    font-size: 17px;
+  }
+
+  .room-name {
+    font-size: 13px;
+  }
+
+  .info-desc {
+    margin-bottom: 16px;
+  }
+
+  .result-card {
+    margin-bottom: 16px;
+  }
+
+  .result-main {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+
+  .action-bar--desktop {
+    display: none;
+  }
+
+  .mobile-action-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 180;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--sp-border);
+    box-shadow: 0 -4px 16px rgba(10, 61, 107, 0.08);
+  }
+
+  .mobile-action-tip {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--sp-text-muted);
+    text-align: center;
+  }
+
+  .mobile-enter-btn {
+    width: 100%;
+    height: 44px;
+    font-weight: 600;
+    border-radius: 8px;
+
+    &.is-disabled {
+      opacity: 0.72;
+    }
   }
 }
 </style>
