@@ -1,4 +1,8 @@
 :root {
+  /* 断点参考值（CSS 变量不可用于 @media，样式请用 breakpoints.scss mixin） */
+  --sp-bp-mobile: 768px;
+  --sp-bp-tablet: 960px;
+
   --sp-brand-primary: #0a3d6b;
   --sp-brand-secondary: #0d6b8f;
   --sp-brand-accent: #c9a227;

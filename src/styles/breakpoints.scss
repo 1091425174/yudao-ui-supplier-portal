@@ -1,0 +1,21 @@
+// 与 composables/useDevice.ts 中的 BREAKPOINTS 保持一致
+$sp-bp-mobile: 768px;
+$sp-bp-tablet: 960px;
+
+@mixin sp-mobile {
+  @media (max-width: ($sp-bp-mobile - 1px)) {
+    @content;
+  }
+}
+
+@mixin sp-tablet-down {
+  @media (max-width: ($sp-bp-tablet - 1px)) {
+    @content;
+  }
+}
+
+@mixin sp-desktop {
+  @media (min-width: $sp-bp-mobile) {
+    @content;
+  }
+}

@@ -46,7 +46,7 @@
           <div class="left-overview">
             <div class="section-title">竞价概况</div>
 
-            <table class="overview-table">
+            <table class="overview-table overview-table--desktop">
               <thead>
               <tr>
                 <th>采购方式</th>
@@ -66,6 +66,29 @@
               </tr>
               </tbody>
             </table>
+
+            <dl class="overview-cards">
+              <div class="overview-card-item">
+                <dt>采购方式</dt>
+                <dd>竞价采购</dd>
+              </div>
+              <div class="overview-card-item">
+                <dt>供应商报价方式</dt>
+                <dd>报总价</dd>
+              </div>
+              <div class="overview-card-item">
+                <dt>项目名称</dt>
+                <dd>{{ roomInfo.projectName || '-' }}</dd>
+              </div>
+              <div class="overview-card-item">
+                <dt>标的名称</dt>
+                <dd>{{ roomInfo.targetName || '-' }}</dd>
+              </div>
+              <div class="overview-card-item">
+                <dt>限价(元)</dt>
+                <dd>{{ roomInfo.priceLimit || '-' }}</dd>
+              </div>
+            </dl>
 
             <!-- 报价记录图表 -->
             <div class="chart-area">
@@ -114,15 +137,9 @@
                   :disabled="statusText !== '竞价中'"
                   @click="openQuoteDialog"
                 >
-                  {{
-                    statusText !== '竞价中'
-                      ? '当前不可报价'
-                      : isLeading
-                        ? '正在领先中 · 再次报价'
-                        : '暂未领先 · 立即报价'
-                  }}
+                  {{ quoteButtonText }}
                 </el-button>
-                <el-tooltip placement="top" effect="dark" popper-class="bid-rule-tooltip">
+                <el-tooltip v-if="!isMobile" placement="top" effect="dark" popper-class="bid-rule-tooltip">
                   <template #content>
                     <div class="bid-rule-tip">
                       <div>1. 竞价开始后、结束前可进行报价。</div>
@@ -136,6 +153,9 @@
                     <QuestionFilled />
                   </el-icon>
                 </el-tooltip>
+                <el-icon v-else class="rule-tip-icon" @click="showBidRules">
+                  <QuestionFilled />
+                </el-icon>
               </div>
             </div>
           </div>
@@ -144,8 +164,18 @@
 
       <!-- 右侧首次报价/报价动态 -->
       <div class="side-panel panel">
-        <div class="side-title">首次报价</div>
+        <div
+          class="side-title"
+          :class="{ 'side-title--clickable': isMobile }"
+          @click="toggleSidePanel"
+        >
+          <span>{{ isMobile ? '首次报价与动态' : '首次报价' }}</span>
+          <el-icon v-if="isMobile" class="side-toggle-icon" :class="{ expanded: sidePanelOpen }">
+            <ArrowDown />
+          </el-icon>
+        </div>
 
+        <div v-show="!isMobile || sidePanelOpen" class="side-panel-body">
         <table class="first-quote-table">
           <thead>
           <tr>
@@ -182,6 +212,28 @@
             <div class="quote-time">--</div>
           </div>
         </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 移动端吸底报价栏 -->
+    <div class="mobile-quote-bar">
+      <div class="mobile-quote-info">
+        <span class="mobile-quote-rank">排名 {{ dashboardInfo.myRank ?? '-' }}</span>
+        <span class="mobile-quote-mine">我的 {{ formatMoney(dashboardInfo.myQuotePrice) }} 元</span>
+      </div>
+      <div class="mobile-quote-actions">
+        <el-button
+          :type="isLeading ? 'success' : 'primary'"
+          class="mobile-quote-btn"
+          :disabled="statusText !== '竞价中'"
+          @click="openQuoteDialog"
+        >
+          {{ quoteButtonText }}
+        </el-button>
+        <el-icon class="rule-tip-icon" @click="showBidRules">
+          <QuestionFilled />
+        </el-icon>
       </div>
     </div>
 
@@ -189,20 +241,24 @@
     <el-dialog
       v-model="quoteDialogVisible"
       title="供应商报价"
-      width="420px"
+      :width="quoteDialogWidth"
+      :fullscreen="isMobile"
       :close-on-click-modal="false"
+      class="quote-dialog"
     >
       <el-form
         ref="quoteFormRef"
         :model="quoteForm"
         :rules="quoteRules"
-        label-width="90px"
+        :label-width="isMobile ? undefined : '90px'"
+        :label-position="isMobile ? 'top' : 'right'"
       >
         <el-form-item label="报价金额" prop="quotePrice">
           <el-input
             v-model="quoteForm.quotePrice"
             placeholder="请输入报价"
             clearable
+            inputmode="decimal"
           >
             <template #append>元</template>
           </el-input>
@@ -240,11 +296,12 @@ defineOptions({
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watchEffect } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowLeft, QuestionFilled } from '@element-plus/icons-vue'
+import { ArrowLeft, ArrowDown, QuestionFilled } from '@element-plus/icons-vue'
 import { useWebSocket } from '@vueuse/core'
 import * as echarts from 'echarts'
 
 import { useRoute, useRouter } from 'vue-router'
+import { useDevice } from '@/composables/useDevice'
 import { getWsUrl } from '@/utils/auth'
 import { RoomApi, type SupplierRoomResult } from '@/api/bid/room'
 import { SupplierQuoteApi } from '@/api/bid/quote'
@@ -252,9 +309,13 @@ import { formatDelayRuleText, formatMaxDelayTimes } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
+const { isMobile } = useDevice()
 
 const goBack = () => router.back()
 const roomId = Number(route.query.id || 0)
+
+const sidePanelOpen = ref(false)
+const quoteDialogWidth = computed(() => (isMobile.value ? '92%' : '420px'))
 
 const loading = ref(false)
 const dashboardRefreshing = ref(false)
@@ -483,6 +544,35 @@ const isLeading = computed(() => {
   return dashboardInfo.myRank === 1
 })
 
+const toggleSidePanel = () => {
+  if (!isMobile.value) return
+  sidePanelOpen.value = !sidePanelOpen.value
+}
+
+const showBidRules = () => {
+  ElMessageBox.alert(
+    [
+      '1. 竞价开始后、结束前可进行报价。',
+      '2. 报价金额必须大于 0。',
+      '3. 新报价需低于当前最低报价。',
+      `4. ${delayRuleText.value}`,
+      '5. 竞价结束后不可继续报价。'
+    ].join('\n'),
+    '报价规则',
+    { confirmButtonText: '知道了' }
+  )
+}
+
+const quoteButtonText = computed(() => {
+  if (statusText.value !== '竞价中') {
+    return isMobile.value ? '不可报价' : '当前不可报价'
+  }
+  if (isMobile.value) {
+    return isLeading.value ? '再次报价' : '立即报价'
+  }
+  return isLeading.value ? '正在领先中 · 再次报价' : '暂未领先 · 立即报价'
+})
+
 const hasTrendData = computed(() => {
   return Array.isArray(dashboardInfo.quoteTrends) && dashboardInfo.quoteTrends.length > 0
 })
@@ -629,10 +719,10 @@ const updateTrendChart = async () => {
         }
       },
       grid: {
-        left: 70,
-        right: 30,
+        left: isMobile.value ? 48 : 70,
+        right: isMobile.value ? 16 : 30,
         top: 35,
-        bottom: 45
+        bottom: isMobile.value ? 32 : 45
       },
       xAxis: {
         type: 'category',
@@ -951,6 +1041,15 @@ onMounted(async () => {
   }, 1000)
 })
 
+watch(isMobile, () => {
+  nextTick(() => {
+    handleResize()
+    if (hasTrendData.value) {
+      updateTrendChart()
+    }
+  })
+})
+
 onBeforeUnmount(() => {
   if (countdownTimer.value) {
     clearInterval(countdownTimer.value)
@@ -970,11 +1069,21 @@ onBeforeUnmount(() => {
 })
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '@/styles/breakpoints.scss' as *;
+
 .bid-room-page {
   min-height: calc(100vh - 68px);
   background: var(--sp-bg-page);
   color: var(--sp-text-primary);
+}
+
+.mobile-quote-bar {
+  display: none;
+}
+
+.overview-cards {
+  display: none;
 }
 
 .room-toolbar {
@@ -1116,6 +1225,27 @@ onBeforeUnmount(() => {
   font-weight: 700;
   color: #303133;
   margin-bottom: 12px;
+}
+
+.side-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.side-title--clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.side-toggle-icon {
+  transition: transform 0.2s;
+  color: #909399;
+
+  &.expanded {
+    transform: rotate(180deg);
+  }
 }
 
 .rule-tip-icon {
@@ -1356,5 +1486,205 @@ onBeforeUnmount(() => {
 .quote-chart {
   width: 100%;
   height: 280px;
+}
+
+@include sp-mobile {
+  .bid-room-page {
+    min-height: calc(100vh - 56px);
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .room-toolbar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .room-title {
+    font-size: 15px;
+  }
+
+  .content-wrap {
+    padding: 12px 12px 16px;
+    gap: 12px;
+    min-height: auto;
+  }
+
+  .header-panel,
+  .overview-panel,
+  .side-panel {
+    padding: 14px 12px;
+  }
+
+  .status-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .time-range {
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .overview-panel {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .right-overview {
+    order: -1;
+    width: 100%;
+  }
+
+  .overview-table--desktop {
+    display: none;
+  }
+
+  .overview-cards {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin: 0;
+  }
+
+  .overview-card-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    background: #fafafa;
+    border: 1px solid #ebeef5;
+    border-radius: 8px;
+
+    dt {
+      flex-shrink: 0;
+      margin: 0;
+      font-size: 13px;
+      color: #909399;
+      font-weight: 500;
+    }
+
+    dd {
+      margin: 0;
+      font-size: 13px;
+      color: #303133;
+      font-weight: 600;
+      text-align: right;
+      word-break: break-all;
+    }
+  }
+
+  .countdown-box {
+    justify-content: center;
+    margin: 12px 0 16px;
+  }
+
+  .time-card {
+    width: 48px;
+    height: 48px;
+    font-size: 24px;
+  }
+
+  .lowest-value,
+  .my-quote-value {
+    font-size: 28px;
+  }
+
+  .my-quote-card {
+    min-height: auto;
+    padding: 18px 14px 16px;
+  }
+
+  .quote-action-row {
+    display: none;
+  }
+
+  .chart-area {
+    margin-top: 16px;
+  }
+
+  .quote-chart,
+  .chart-placeholder {
+    height: 200px;
+  }
+
+  .quote-log {
+    max-height: 240px;
+  }
+
+  .mobile-quote-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 180;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--sp-border);
+    box-shadow: 0 -4px 16px rgba(10, 61, 107, 0.08);
+  }
+
+  .mobile-quote-info {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 12px;
+    color: #606266;
+  }
+
+  .mobile-quote-rank {
+    font-weight: 600;
+    color: var(--sp-brand-primary);
+  }
+
+  .mobile-quote-mine {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-quote-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .mobile-quote-btn {
+    flex: 1;
+    height: 44px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  @media (max-height: 500px) and (orientation: landscape) {
+    .quote-chart,
+    .chart-placeholder {
+      height: 140px;
+    }
+
+    .mobile-quote-bar {
+      flex-direction: row;
+      align-items: center;
+      padding-top: 8px;
+      padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .mobile-quote-info {
+      flex-direction: column;
+      gap: 2px;
+      min-width: 88px;
+    }
+
+    .mobile-quote-btn {
+      height: 40px;
+    }
+
+    .my-quote-card {
+      padding-bottom: 12px;
+    }
+  }
 }
 </style>

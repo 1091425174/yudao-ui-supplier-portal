@@ -12,7 +12,7 @@
         </div>
       </div>
 
-      <nav class="nav">
+      <nav class="nav nav-desktop">
         <a
           v-for="item in navItems"
           :key="item.path"
@@ -30,7 +30,7 @@
           <el-dropdown trigger="click" @command="handleUserCommand">
             <div v-if="displayName" class="user-chip">
               <el-icon><UserFilled /></el-icon>
-              <span>{{ displayName }}</span>
+              <span class="user-name">{{ displayName }}</span>
               <el-icon class="user-arrow"><ArrowDown /></el-icon>
             </div>
             <template #dropdown>
@@ -48,15 +48,66 @@
           </el-dropdown>
         </template>
         <el-button v-else class="action-btn login-btn" @click="router.push('/login')">
-          供应商登录
+          <span class="login-text">供应商登录</span>
         </el-button>
+
+        <button
+          type="button"
+          class="menu-toggle"
+          aria-label="打开菜单"
+          @click="mobileMenuOpen = true"
+        >
+          <el-icon><Menu /></el-icon>
+        </button>
       </div>
     </div>
+
+    <el-drawer
+      v-model="mobileMenuOpen"
+      direction="rtl"
+      size="78%"
+      :with-header="false"
+      append-to-body
+      class="mobile-nav-drawer"
+    >
+      <div class="mobile-nav">
+        <div class="mobile-nav-head">
+          <div class="mobile-nav-title">导航菜单</div>
+          <button type="button" class="mobile-nav-close" aria-label="关闭菜单" @click="mobileMenuOpen = false">
+            <el-icon><Close /></el-icon>
+          </button>
+        </div>
+
+        <nav class="mobile-nav-list">
+          <a
+            v-for="item in navItems"
+            :key="item.path"
+            href="javascript:void(0)"
+            class="mobile-nav-item"
+            :class="{ active: isNavActive(item) }"
+            @click="goNav(item)"
+          >
+            {{ item.label }}
+          </a>
+        </nav>
+
+        <div class="mobile-nav-footer">
+          <template v-if="isLoggedIn">
+            <div v-if="displayName" class="mobile-user-name">{{ displayName }}</div>
+            <el-button class="mobile-action-btn" @click="handleMobileProfile">个人中心</el-button>
+            <el-button class="mobile-action-btn" @click="handleLogout">退出登录</el-button>
+          </template>
+          <el-button v-else type="primary" class="mobile-action-btn" @click="handleMobileLogin">
+            供应商登录
+          </el-button>
+        </div>
+      </div>
+    </el-drawer>
   </header>
 </template>
 
 <script setup lang="ts">
-import { ArrowDown, SwitchButton, User, UserFilled } from '@element-plus/icons-vue'
+import { ArrowDown, Close, Menu, SwitchButton, User, UserFilled } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getAccessToken } from '@/utils/auth'
 import { useUserStoreWithOut } from '@/store/user'
@@ -80,6 +131,7 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStoreWithOut()
 const appTitle = import.meta.env.VITE_APP_TITLE
+const mobileMenuOpen = ref(false)
 
 const navItems: NavItem[] = [
   { label: '首页', path: '/', exact: true, public: true },
@@ -97,6 +149,13 @@ const displayName = computed(
   () => userStore.getUser.nickname || userStore.getUser.username || ''
 )
 
+watch(
+  () => route.path,
+  () => {
+    mobileMenuOpen.value = false
+  }
+)
+
 const isNavActive = (item: NavItem) => {
   if (item.matchPaths) {
     return item.matchPaths.some((p) => route.path === p || route.path.startsWith(`${p}/`))
@@ -108,6 +167,7 @@ const isNavActive = (item: NavItem) => {
 }
 
 const goNav = (item: NavItem) => {
+  mobileMenuOpen.value = false
   if (!item.public && !getAccessToken()) {
     router.push({ path: '/login', query: { redirect: item.path } })
     return
@@ -115,7 +175,10 @@ const goNav = (item: NavItem) => {
   router.push(item.path)
 }
 
-const goHome = () => router.push('/')
+const goHome = () => {
+  mobileMenuOpen.value = false
+  router.push('/')
+}
 
 const handleUserCommand = (command: string) => {
   if (command === 'profile') {
@@ -127,13 +190,26 @@ const handleUserCommand = (command: string) => {
   }
 }
 
+const handleMobileLogin = () => {
+  mobileMenuOpen.value = false
+  router.push('/login')
+}
+
+const handleMobileProfile = () => {
+  mobileMenuOpen.value = false
+  router.push('/profile')
+}
+
 const handleLogout = async () => {
+  mobileMenuOpen.value = false
   await userStore.loginOutAction()
   router.replace('/login')
 }
 </script>
 
 <style scoped lang="scss">
+@use '@/styles/breakpoints.scss' as *;
+
 .app-header {
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(12px);
@@ -173,6 +249,7 @@ const handleLogout = async () => {
   gap: 14px;
   cursor: pointer;
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .brand-logo-wrap {
@@ -185,6 +262,7 @@ const handleLogout = async () => {
   align-items: center;
   justify-content: center;
   box-shadow: var(--sp-shadow-sm);
+  flex-shrink: 0;
 }
 
 .brand-logo {
@@ -193,12 +271,19 @@ const handleLogout = async () => {
   object-fit: contain;
 }
 
+.brand-text {
+  min-width: 0;
+}
+
 .brand-title {
   font-size: 17px;
   font-weight: 700;
   color: var(--sp-brand-primary);
   line-height: 1.25;
   letter-spacing: 0.3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .brand-sub {
@@ -209,7 +294,7 @@ const handleLogout = async () => {
   margin-top: 2px;
 }
 
-.nav {
+.nav-desktop {
   display: flex;
   gap: 6px;
   flex: 1;
@@ -244,6 +329,7 @@ const handleLogout = async () => {
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .action-btn {
@@ -279,7 +365,7 @@ const handleLogout = async () => {
     color: var(--sp-brand-secondary);
   }
 
-  span {
+  .user-name {
     max-width: 100px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -292,9 +378,170 @@ const handleLogout = async () => {
   color: var(--sp-text-muted);
 }
 
+.menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--sp-border);
+  border-radius: 8px;
+  background: var(--sp-bg-page);
+  color: var(--sp-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    color: var(--sp-brand-secondary);
+    border-color: rgba(13, 107, 143, 0.35);
+  }
+
+  .el-icon {
+    font-size: 20px;
+  }
+}
+
+.mobile-nav {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.mobile-nav-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--sp-border);
+}
+
+.mobile-nav-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--sp-text-primary);
+}
+
+.mobile-nav-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--sp-text-muted);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--sp-bg-page);
+    color: var(--sp-text-secondary);
+  }
+}
+
+.mobile-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mobile-nav-item {
+  padding: 14px 12px;
+  border-radius: 10px;
+  color: var(--sp-text-secondary);
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+  transition: all 0.2s;
+
+  &.active {
+    color: var(--sp-brand-primary);
+    font-weight: 600;
+    background: linear-gradient(135deg, rgba(13, 107, 143, 0.1) 0%, rgba(201, 162, 39, 0.08) 100%);
+  }
+}
+
+.mobile-nav-footer {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid var(--sp-border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobile-user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sp-text-primary);
+  margin-bottom: 4px;
+}
+
+.mobile-action-btn {
+  width: 100%;
+  margin: 0;
+}
+
 :deep(.el-dropdown-menu__item) {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+@include sp-mobile {
+  .header-inner {
+    padding: 0 12px;
+    gap: 10px;
+    height: 56px;
+  }
+
+  .brand {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .brand-logo-wrap {
+    width: 36px;
+    height: 36px;
+  }
+
+  .brand-logo {
+    width: 26px;
+    height: 26px;
+  }
+
+  .brand-title {
+    font-size: 15px;
+  }
+
+  .brand-sub {
+    display: none;
+  }
+
+  .nav-desktop {
+    display: none;
+  }
+
+  .menu-toggle {
+    display: flex;
+  }
+
+  .header-actions .login-btn {
+    display: none;
+  }
+
+  .user-chip {
+    padding: 8px 10px;
+
+    .user-name,
+    .user-arrow {
+      display: none;
+    }
+  }
 }
 </style>

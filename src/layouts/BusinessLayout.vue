@@ -2,6 +2,18 @@
   <div class="business-layout" :class="{ immersive: isImmersive }">
     <AppHeader variant="business" />
 
+    <nav v-if="!isImmersive" class="business-mobile-nav" aria-label="业务导航">
+      <router-link
+        v-for="item in menuItems"
+        :key="item.path"
+        :to="item.path"
+        class="mobile-nav-tab"
+        active-class="active"
+      >
+        {{ item.label }}
+      </router-link>
+    </nav>
+
     <div class="business-body">
       <aside v-if="!isImmersive" class="business-sidebar">
         <div class="sidebar-header">
@@ -63,11 +75,17 @@ const isImmersive = computed(() => !!route.meta.immersive)
 </script>
 
 <style scoped lang="scss">
+@use '@/styles/breakpoints.scss' as *;
+
 .business-layout {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   background: var(--sp-bg-page);
+}
+
+.business-mobile-nav {
+  display: none;
 }
 
 .business-body {
@@ -207,9 +225,11 @@ const isImmersive = computed(() => !!route.meta.immersive)
   padding: 0;
 }
 
-@media (max-width: 960px) {
+@include sp-tablet-down {
   .business-body {
     flex-direction: column;
+    gap: 16px;
+    padding: 20px 20px 32px;
   }
 
   .business-sidebar {
@@ -225,6 +245,48 @@ const isImmersive = computed(() => !!route.meta.immersive)
   .sidebar-item {
     flex: 1;
     min-width: 140px;
+  }
+}
+
+@include sp-mobile {
+  .business-mobile-nav {
+    display: flex;
+    position: sticky;
+    top: 56px;
+    z-index: 150;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--sp-border);
+    padding: 8px 12px;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(10, 61, 107, 0.04);
+  }
+
+  .mobile-nav-tab {
+    flex: 1;
+    text-align: center;
+    padding: 10px 8px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--sp-text-secondary);
+    text-decoration: none;
+    transition: all 0.2s;
+
+    &.active {
+      color: var(--sp-brand-primary);
+      background: linear-gradient(135deg, rgba(13, 107, 143, 0.1) 0%, rgba(201, 162, 39, 0.08) 100%);
+      box-shadow: inset 0 0 0 1px rgba(13, 107, 143, 0.12);
+    }
+  }
+
+  .business-sidebar {
+    display: none;
+  }
+
+  .business-body {
+    padding: 12px 16px 24px;
+    gap: 12px;
   }
 }
 </style>

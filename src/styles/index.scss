@@ -1,4 +1,5 @@
 @use './variables.scss';
+@use './breakpoints.scss' as *;
 
 * {
   box-sizing: border-box;
