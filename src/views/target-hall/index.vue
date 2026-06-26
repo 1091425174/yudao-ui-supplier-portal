@@ -2,8 +2,22 @@
   <div class="page-panel">
     <PageHeader title="标的大厅" description="查看可报名标的，提交报名材料并跟踪审核进度" />
 
-    <div class="filter-panel sp-card">
+    <div
+      class="filter-panel sp-card"
+      :class="{ 'filter-panel--collapsed': isMobile && !filterExpanded }"
+    >
+      <div class="filter-panel-head" @click="toggleFilterPanel">
+        <div class="filter-panel-head-left">
+          <span class="filter-panel-title">筛选条件</span>
+          <span v-if="hasActiveFilters" class="filter-panel-badge">已筛选</span>
+        </div>
+        <el-icon class="filter-toggle-icon" :class="{ expanded: filterExpanded }">
+          <ArrowDown />
+        </el-icon>
+      </div>
+
       <el-form
+        v-show="!isMobile || filterExpanded"
         :inline="!isMobile"
         :label-position="isMobile ? 'top' : 'right'"
         class="filter-form"
@@ -165,6 +179,7 @@
 
 <script setup lang="ts">
 import type { FormInstance, FormRules } from 'element-plus'
+import { ArrowDown } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { SignupApi, type SupplierTarget } from '@/api/bid/signup'
@@ -184,6 +199,8 @@ const paginationLayout = computed(() =>
   isMobile.value ? 'total, prev, pager, next' : 'prev, pager, next, total'
 )
 
+const filterExpanded = ref(false)
+
 const loading = ref(false)
 const submitting = ref(false)
 const list = ref<SupplierTarget[]>([])
@@ -197,6 +214,19 @@ const queryParams = reactive({
   code: '',
   signupStatus: undefined as number | undefined
 })
+
+const hasActiveFilters = computed(
+  () =>
+    !!queryParams.projectName ||
+    !!queryParams.name ||
+    !!queryParams.code ||
+    queryParams.signupStatus !== undefined
+)
+
+const toggleFilterPanel = () => {
+  if (!isMobile.value) return
+  filterExpanded.value = !filterExpanded.value
+}
 
 const signupDialogVisible = ref(false)
 const signupFormRef = ref<FormInstance>()
@@ -317,6 +347,10 @@ onMounted(getList)
   padding: 20px 24px 4px;
 }
 
+.filter-panel-head {
+  display: none;
+}
+
 .filter-input {
   width: 160px;
 }
@@ -407,6 +441,56 @@ onMounted(getList)
   .filter-panel {
     margin-bottom: 12px;
     padding: 14px 12px 2px;
+  }
+
+  .filter-panel--collapsed {
+    padding-bottom: 14px;
+  }
+
+  .filter-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 0;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .filter-panel:not(.filter-panel--collapsed) .filter-panel-head {
+    margin-bottom: 12px;
+  }
+
+  .filter-panel-head-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .filter-panel-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--sp-text-primary);
+  }
+
+  .filter-panel-badge {
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--sp-brand-secondary);
+    background: rgba(13, 107, 143, 0.1);
+  }
+
+  .filter-toggle-icon {
+    flex-shrink: 0;
+    color: var(--sp-text-muted);
+    transition: transform 0.2s;
+
+    &.expanded {
+      transform: rotate(180deg);
+    }
   }
 
   .filter-form {
