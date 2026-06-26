@@ -3,7 +3,12 @@
     <PageHeader title="标的大厅" description="查看可报名标的，提交报名材料并跟踪审核进度" />
 
     <div class="filter-panel sp-card">
-      <el-form :inline="true" @submit.prevent>
+      <el-form
+        :inline="!isMobile"
+        :label-position="isMobile ? 'top' : 'right'"
+        class="filter-form"
+        @submit.prevent
+      >
         <el-form-item label="项目名称">
           <el-input
             v-model="queryParams.projectName"
@@ -38,7 +43,7 @@
             <el-option label="审核不通过" :value="30" />
           </el-select>
         </el-form-item>
-        <el-form-item>
+        <el-form-item class="filter-actions">
           <el-button type="primary" @click="handleQuery">搜索</el-button>
           <el-button @click="resetQuery">重置</el-button>
         </el-form-item>
@@ -59,7 +64,7 @@
 
         <div class="target-desc">{{ item.content || '暂无标的描述' }}</div>
 
-        <el-descriptions :column="2" border size="small" class="info-desc">
+        <el-descriptions :column="descColumn" border size="small" class="info-desc">
           <el-descriptions-item label="标的编号">{{ item.code || '--' }}</el-descriptions-item>
           <el-descriptions-item label="限价">{{ formatMoney(item.priceLimit) }} 元</el-descriptions-item>
           <el-descriptions-item label="竞价开始">{{ formatDateTime(item.roomStartTime) }}</el-descriptions-item>
@@ -104,14 +109,27 @@
         v-model:current-page="pageNo"
         :page-size="pageSize"
         :total="total"
-        layout="prev, pager, next, total"
+        :layout="paginationLayout"
+        :small="isMobile"
         background
         @current-change="getList"
       />
     </div>
 
-    <el-dialog v-model="signupDialogVisible" title="供应商报名" width="560px">
-      <el-form ref="signupFormRef" :model="signupForm" :rules="signupRules" label-width="96px">
+    <el-dialog
+      v-model="signupDialogVisible"
+      title="供应商报名"
+      :width="signupDialogWidth"
+      :fullscreen="isMobile"
+      class="signup-dialog"
+    >
+      <el-form
+        ref="signupFormRef"
+        :model="signupForm"
+        :rules="signupRules"
+        :label-width="isMobile ? undefined : '96px'"
+        :label-position="isMobile ? 'top' : 'right'"
+      >
         <el-form-item label="标的名称">
           <el-input :model-value="currentTarget?.name || '--'" disabled />
         </el-form-item>
@@ -119,7 +137,11 @@
           <el-input v-model="signupForm.contactName" placeholder="请输入联系人" />
         </el-form-item>
         <el-form-item label="联系电话" prop="contactMobile">
-          <el-input v-model="signupForm.contactMobile" placeholder="请输入联系电话" />
+          <el-input
+            v-model="signupForm.contactMobile"
+            placeholder="请输入联系电话"
+            inputmode="tel"
+          />
         </el-form-item>
         <el-form-item label="资质附件" prop="qualificationFiles">
           <UploadFile v-model="signupForm.qualificationFiles" :is-show-tip="false" />
@@ -147,12 +169,20 @@ import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { SignupApi, type SupplierTarget } from '@/api/bid/signup'
 import { formatDateTime, formatMoney } from '@/utils/format'
+import { useDevice } from '@/composables/useDevice'
 import UploadFile from '@/components/UploadFile/index.vue'
 import PageHeader from '@/components/PageHeader.vue'
 
 defineOptions({ name: 'SupplierTargetHall' })
 
 const router = useRouter()
+const { isMobile } = useDevice()
+
+const descColumn = computed(() => (isMobile.value ? 1 : 2))
+const signupDialogWidth = computed(() => (isMobile.value ? '92%' : '560px'))
+const paginationLayout = computed(() =>
+  isMobile.value ? 'total, prev, pager, next' : 'prev, pager, next, total'
+)
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -276,6 +306,8 @@ onMounted(getList)
 </script>
 
 <style scoped lang="scss">
+@use '@/styles/breakpoints.scss' as *;
+
 .page-panel {
   min-height: 100%;
 }
@@ -365,9 +397,105 @@ onMounted(getList)
   justify-content: center;
 }
 
-@media (max-width: 960px) {
+@include sp-tablet-down {
   .target-list {
     grid-template-columns: 1fr;
+  }
+}
+
+@include sp-mobile {
+  .filter-panel {
+    margin-bottom: 12px;
+    padding: 14px 12px 2px;
+  }
+
+  .filter-form {
+    :deep(.el-form-item) {
+      display: block;
+      margin-right: 0;
+      width: 100%;
+    }
+  }
+
+  .filter-input {
+    width: 100%;
+  }
+
+  .filter-actions {
+    :deep(.el-form-item__content) {
+      display: flex;
+      gap: 8px;
+    }
+
+    .el-button {
+      flex: 1;
+      margin: 0;
+    }
+  }
+
+  .target-list {
+    gap: 12px;
+  }
+
+  .target-card {
+    padding: 14px 14px 16px;
+
+    &::before {
+      opacity: 1;
+    }
+  }
+
+  .card-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .target-name {
+    font-size: 16px;
+    word-break: break-all;
+  }
+
+  .target-desc {
+    margin-bottom: 12px;
+    min-height: auto;
+    font-size: 13px;
+  }
+
+  .info-desc {
+    margin-bottom: 12px;
+
+    :deep(.el-descriptions__label),
+    :deep(.el-descriptions__content) {
+      font-size: 12px;
+    }
+  }
+
+  .audit-alert {
+    margin-bottom: 12px;
+  }
+
+  .card-actions {
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 0;
+
+    .el-button {
+      width: 100%;
+      margin: 0;
+    }
+  }
+
+  .pagination-bar {
+    margin-top: 16px;
+    padding-bottom: 4px;
+
+    :deep(.el-pagination) {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px 4px;
+    }
   }
 }
 </style>
