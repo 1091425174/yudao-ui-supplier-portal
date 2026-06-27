@@ -472,6 +472,7 @@ const handleLogout = async () => {
   border-top: 1px solid var(--sp-border);
   display: flex;
   flex-direction: column;
+  align-items: stretch;
   gap: 10px;
 }
 
@@ -482,9 +483,14 @@ const handleLogout = async () => {
   margin-bottom: 4px;
 }
 
-.mobile-action-btn {
+.mobile-nav-footer :deep(.mobile-action-btn.el-button) {
   width: 100%;
-  margin: 0;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.mobile-nav-footer :deep(.mobile-action-btn.el-button + .el-button) {
+  margin-left: 0;
 }
 
 :deep(.el-dropdown-menu__item) {
