@@ -203,7 +203,7 @@ const services = [
 
 .hero-actions {
   display: flex;
-  gap: 16px;
+  gap: 10px;
   flex-wrap: wrap;
   margin-bottom: 48px;
 }
