@@ -56,6 +56,38 @@
       </div>
     </section>
 
+    <section class="section section-disclosures">
+      <div class="section-inner">
+        <div class="section-header">
+          <h2 class="sp-section-title">最新交易公示</h2>
+          <router-link to="/disclosures" class="more-link">
+            查看全部
+            <el-icon><ArrowRight /></el-icon>
+          </router-link>
+        </div>
+
+        <div class="announce-panel">
+          <div
+            v-for="item in latestDisclosures"
+            :key="item.id"
+            class="announce-item"
+            @click="goDisclosureDetail(item.id)"
+          >
+            <div class="announce-dot disclosure" />
+            <div class="announce-body">
+              <div class="announce-title-row">
+                <el-tag size="small" effect="plain" round>{{ disclosureTypeLabel(item.type) }}</el-tag>
+                <span class="announce-title">{{ item.title }}</span>
+              </div>
+            </div>
+            <span class="announce-date">{{ formatDisclosureDate(item) }}</span>
+            <el-icon class="announce-arrow"><ArrowRight /></el-icon>
+          </div>
+          <el-empty v-if="latestDisclosures.length === 0" description="暂无交易公示" :image-size="64" />
+        </div>
+      </div>
+    </section>
+
     <section class="section section-services">
       <div class="section-inner">
         <h2 class="sp-section-title section-title-center">核心服务</h2>
@@ -85,11 +117,13 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getAccessToken } from '@/utils/auth'
 import { PortalNoticeApi, type PortalNotice } from '@/api/bid/portalNotice'
+import { DisclosureApi, DISCLOSURE_TYPE_MAP, type Disclosure } from '@/api/bid/disclosure'
 
 const router = useRouter()
 const isLoggedIn = computed(() => !!getAccessToken())
 
 const latestAnnouncements = ref<PortalNotice[]>([])
+const latestDisclosures = ref<Disclosure[]>([])
 
 const formatDate = (item: PortalNotice) => {
   const time = item.publishTime || item.createTime
@@ -109,7 +143,30 @@ const goAnnouncementDetail = (id: number) => {
   router.push(`/announcements/${id}`)
 }
 
-onMounted(loadLatestAnnouncements)
+const disclosureTypeLabel = (type?: number) => (type ? DISCLOSURE_TYPE_MAP[type] || '公示' : '公示')
+
+const formatDisclosureDate = (item: Disclosure) => {
+  const time = item.publishTime
+  return time ? dayjs(time).format('YYYY-MM-DD') : ''
+}
+
+const goDisclosureDetail = (id: number) => {
+  router.push(`/disclosures/${id}`)
+}
+
+const loadLatestDisclosures = async () => {
+  try {
+    const data = await DisclosureApi.getDisclosurePage({ pageNo: 1, pageSize: 5 })
+    latestDisclosures.value = data.list || []
+  } catch {
+    latestDisclosures.value = []
+  }
+}
+
+onMounted(() => {
+  loadLatestAnnouncements()
+  loadLatestDisclosures()
+})
 
 const stats = [
   { value: '7×24', label: '全天候服务' },
@@ -152,7 +209,7 @@ const services = [
   },
   {
     name: '通知公告',
-    desc: '平台通知、采购说明与公示',
+    desc: '平台通知、交易说明与公示',
     icon: Bell,
     gradient: 'linear-gradient(135deg, #3d6b8f 0%, #2a5070 100%)',
     action: () => router.push('/announcements')
@@ -284,6 +341,11 @@ const services = [
   border-top: 1px solid var(--sp-border);
 }
 
+.section-disclosures {
+  background: #f7faf8;
+  border-top: 1px solid var(--sp-border);
+}
+
 .section-inner {
   max-width: 1320px;
   margin: 0 auto;
@@ -351,6 +413,10 @@ const services = [
   &.pinned {
     background: var(--sp-brand-accent);
     box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.25);
+  }
+
+  &.disclosure {
+    background: #2d6a4f;
   }
 }
 

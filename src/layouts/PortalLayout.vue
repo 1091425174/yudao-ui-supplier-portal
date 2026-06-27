@@ -20,6 +20,7 @@
               <router-link to="/target-hall">标的大厅</router-link>
               <router-link to="/trade-hall">交易大厅</router-link>
               <router-link to="/announcements">通知公告</router-link>
+              <router-link to="/disclosures">交易公示</router-link>
             </div>
             <div class="link-group">
               <div class="link-title">服务说明</div>

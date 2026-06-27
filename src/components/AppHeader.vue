@@ -136,6 +136,7 @@ const mobileMenuOpen = ref(false)
 const navItems: NavItem[] = [
   { label: '首页', path: '/', exact: true, public: true },
   { label: '通知公告', path: '/announcements', public: true },
+  { label: '交易公示', path: '/disclosures', public: true },
   { label: '标的大厅', path: '/target-hall' },
   {
     label: '交易大厅',
