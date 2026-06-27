@@ -8,8 +8,13 @@
     </div>
 
     <div class="page-inner">
-      <div class="announce-card-list">
-        <div v-for="item in portalAnnouncements" :key="item.id" class="announce-card sp-card">
+      <div v-loading="loading" class="announce-card-list">
+        <div
+          v-for="item in list"
+          :key="item.id"
+          class="announce-card sp-card"
+          @click="goDetail(item.id)"
+        >
           <div class="card-accent" :class="{ pinned: item.pinned }" />
           <div class="card-body">
             <div class="card-head">
@@ -17,18 +22,66 @@
                 <el-tag v-if="item.pinned" type="warning" size="small" effect="dark" round>置顶</el-tag>
                 <h3 class="card-title">{{ item.title }}</h3>
               </div>
-              <span class="card-date">{{ item.date }}</span>
+              <span class="card-date">{{ formatDate(item) }}</span>
             </div>
             <p v-if="item.summary" class="card-summary">{{ item.summary }}</p>
           </div>
         </div>
+        <el-empty v-if="!loading && list.length === 0" description="暂无公告" />
+      </div>
+
+      <div v-if="total > queryParams.pageSize" class="pagination-wrap">
+        <el-pagination
+          v-model:current-page="queryParams.pageNo"
+          v-model:page-size="queryParams.pageSize"
+          :total="total"
+          layout="prev, pager, next"
+          background
+          @current-change="loadList"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { portalAnnouncements } from '@/data/portalAnnouncements'
+import dayjs from 'dayjs'
+import { useRouter } from 'vue-router'
+import { PortalNoticeApi, type PortalNotice } from '@/api/bid/portalNotice'
+
+const router = useRouter()
+const loading = ref(false)
+const list = ref<PortalNotice[]>([])
+const total = ref(0)
+const queryParams = reactive({
+  pageNo: 1,
+  pageSize: 10
+})
+
+const formatDate = (item: PortalNotice) => {
+  const time = item.publishTime || item.createTime
+  return time ? dayjs(time).format('YYYY-MM-DD') : ''
+}
+
+const goDetail = (id: number) => {
+  router.push(`/announcements/${id}`)
+}
+
+const loadList = async () => {
+  loading.value = true
+  try {
+    const data = await PortalNoticeApi.getPortalNoticePage(queryParams)
+    list.value = data.list || []
+    total.value = data.total || 0
+  } catch {
+    list.value = []
+    total.value = 0
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(loadList)
 </script>
 
 <style scoped lang="scss">
@@ -72,12 +125,19 @@ import { portalAnnouncements } from '@/data/portalAnnouncements'
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-height: 120px;
 }
 
 .announce-card {
   display: flex;
   overflow: hidden;
   padding: 0;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+
+  &:hover {
+    box-shadow: var(--sp-shadow-md);
+  }
 }
 
 .card-accent {
@@ -129,5 +189,11 @@ import { portalAnnouncements } from '@/data/portalAnnouncements'
   color: var(--sp-text-secondary);
   font-size: 14px;
   line-height: 1.8;
+}
+
+.pagination-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 28px;
 }
 </style>

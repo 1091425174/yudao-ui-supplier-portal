@@ -40,7 +40,7 @@
             v-for="item in latestAnnouncements"
             :key="item.id"
             class="announce-item"
-            @click="router.push('/announcements')"
+            @click="goAnnouncementDetail(item.id)"
           >
             <div class="announce-dot" :class="{ pinned: item.pinned }" />
             <div class="announce-body">
@@ -49,7 +49,7 @@
                 <span class="announce-title">{{ item.title }}</span>
               </div>
             </div>
-            <span class="announce-date">{{ item.date }}</span>
+            <span class="announce-date">{{ formatDate(item) }}</span>
             <el-icon class="announce-arrow"><ArrowRight /></el-icon>
           </div>
         </div>
@@ -80,15 +80,36 @@
 
 <script setup lang="ts">
 import { ArrowRight, Bell, DataLine, Document } from '@element-plus/icons-vue'
+import dayjs from 'dayjs'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getAccessToken } from '@/utils/auth'
-import { portalAnnouncements } from '@/data/portalAnnouncements'
+import { PortalNoticeApi, type PortalNotice } from '@/api/bid/portalNotice'
 
 const router = useRouter()
 const isLoggedIn = computed(() => !!getAccessToken())
 
-const latestAnnouncements = computed(() => portalAnnouncements.slice(0, 5))
+const latestAnnouncements = ref<PortalNotice[]>([])
+
+const formatDate = (item: PortalNotice) => {
+  const time = item.publishTime || item.createTime
+  return time ? dayjs(time).format('YYYY-MM-DD') : ''
+}
+
+const loadLatestAnnouncements = async () => {
+  try {
+    const data = await PortalNoticeApi.getPortalNoticePage({ pageNo: 1, pageSize: 5 })
+    latestAnnouncements.value = data.list || []
+  } catch {
+    latestAnnouncements.value = []
+  }
+}
+
+const goAnnouncementDetail = (id: number) => {
+  router.push(`/announcements/${id}`)
+}
+
+onMounted(loadLatestAnnouncements)
 
 const stats = [
   { value: '7×24', label: '全天候服务' },

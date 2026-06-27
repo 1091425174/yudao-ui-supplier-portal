@@ -18,6 +18,12 @@ const routes: RouteRecordRaw[] = [
         name: 'PortalAnnouncements',
         component: () => import('@/views/portal/announcements/index.vue'),
         meta: { title: '通知公告', public: true }
+      },
+      {
+        path: 'announcements/:id',
+        name: 'PortalAnnouncementDetail',
+        component: () => import('@/views/portal/announcements/detail.vue'),
+        meta: { title: '公告详情', public: true }
       }
     ]
   },
